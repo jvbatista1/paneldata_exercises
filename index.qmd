@@ -5,7 +5,7 @@ format: html
 editor: visual
 ---
 
-```{r, echo=FALSE}
+```{r, output=FALSE}
 library(tidyverse)
 
 pasta <- ("C:/Users/victo/OneDrive/Documentos/MESTRADO_ECONOMIA_UFC/ECONOMETRIA/lista")
@@ -13,13 +13,13 @@ pasta <- ("C:/Users/victo/OneDrive/Documentos/MESTRADO_ECONOMIA_UFC/ECONOMETRIA/
 df <- read_csv(file.path(pasta,"painel.csv"))
 ```
 
-Questão 6 (Painel)
+# Questão 6 (Painel)
 
 Use os dados em painel.csv para responder às seguintes perguntas.
 
-a\) Usando lwage como variável dependente, estime um modelo que só contém uma intercepto e as dummies dos anos d81 até d87. Use MQO agrupado, EA e EF. Que conclusões podem ser obtidas sobre os coeficientes das dummies anuais?
+a\) Usando `lwage` como variável dependente, estime um modelo que só contém uma intercepto e as dummies dos anos `d81` até `d87`. Use MQO agrupado, EA e EF. Que conclusões podem ser obtidas sobre os coeficientes das dummies anuais?
 
-```{r, echo=FALSE}
+```{r, output=FALSE}
 d_vars <- paste(paste0("d8", 1:7), collapse = " + ")
 formula <- paste("lwage ~ ",d_vars)
 formula <- as.formula(formula)
@@ -82,13 +82,22 @@ df <- df %>%
 formula_e <- as.formula("lwage ~ union + married + union_mean + married_mean + educ + black + hisp")
 
 random_e <- plm(formula_e, index = c("nr", "year"), model="random", data = df)
+within_e <- plm(formula_e, index = c("nr", "year"), model="within", data = df)
 
-modelsummary(list("RE" = random_e, "FE" = within_d))
+modelsummary(list("RE" = random_e, "FE" = within_e))
 
 ```
 
 f\) Conduza um teste de Hausman.
 
+```{r}
+phtest(random_e, within_e)
+```
+
 g\) Deixe que `educ` tenha um efeito interativo com ambos `union` e `married` e estime o modelo por efeitos fixos. As interações são significantes?
+
+```{r}
+
+```
 
 h\) Estime os efeitos parciais médios de `union` e `married` para o modelo estimado no item anterior. Como isso se compara com as estimativas por EF?
