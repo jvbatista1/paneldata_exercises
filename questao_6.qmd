@@ -1,0 +1,94 @@
+---
+title: "Question 6 (Panel data)"
+author: "Victor Batista"
+format: html
+editor: visual
+---
+
+```{r, echo=FALSE}
+library(tidyverse)
+
+pasta <- ("C:/Users/victo/OneDrive/Documentos/MESTRADO_ECONOMIA_UFC/ECONOMETRIA/lista")
+
+df <- read_csv(file.path(pasta,"painel.csv"))
+```
+
+Questão 6 (Painel)
+
+Use os dados em painel.csv para responder às seguintes perguntas.
+
+a\) Usando lwage como variável dependente, estime um modelo que só contém uma intercepto e as dummies dos anos d81 até d87. Use MQO agrupado, EA e EF. Que conclusões podem ser obtidas sobre os coeficientes das dummies anuais?
+
+```{r, echo=FALSE}
+d_vars <- paste(paste0("d8", 1:7), collapse = " + ")
+formula <- paste("lwage ~ ",d_vars)
+formula <- as.formula(formula)
+```
+
+```{r, warning=FALSE}
+library(plm)
+pooling <- plm(formula, model="pooling", data = df)
+random <- update(pooling, index = c("nr", "year"), model="random")
+within <- update(random, model="within")
+
+library(modelsummary)
+modelsummary(list("POLS" = pooling, "RE" = random, "FE" = within))
+```
+
+b\) Acrescente as variáveis `educ`, `black`, e `hisp` ao modelo, e estime por MQO e EA. Como os coeficientes se comparam? O que acontece se você estimar a equação por EF?
+
+```{r, warning=FALSE}
+formula_b <- paste("lwage ~ ",d_vars, "+ educ + black + hisp")
+formula_b <- as.formula(formula_b)
+
+pooling_b <- plm(formula_b, model="pooling", data = df)
+random_b <- update(pooling_b, index = c("nr", "year"), model="random")
+within_b <- update(random_b, model="within")
+
+modelsummary(list("POLS" = pooling_b, "RE" = random_b, "FE" = within_b))
+```
+
+c\) Agora estime a equação $lwage_{it} = α_t + β_1union_{it} + β_2married_{it} + β_3educ_i + β_4black_i +β_5hisp_i + c_i + u_{it}$ por efeitos aleatórios. Os coeficientes parecem razoáveis?
+
+```{r, warning=FALSE}
+formula_c <- as.formula("lwage ~ union + married + educ + black + hisp")
+
+random_c <- plm(formula_c, index = c("nr", "year"), model="random", data = df)
+
+modelsummary(list("RE" = random_c))
+```
+
+d\) Agora estime a equação $lwage_{it} = α_t + β_1union_{it} + β_2married_{it} + c_i + u_{it}$ por efeitos fixos, certifique-se incluir o conjunto completo de dummies de tempo para refletir os diferentes interceptos. Como as estimativas de $\beta_1$ e $\beta_2$ se comparam com as do item anterior?
+
+```{r, warning=FALSE}
+formula_d <- as.formula("lwage ~ union + married")
+
+within_d <- plm(formula_d, index = c("nr", "year"), model="within", data = df)
+
+modelsummary(list("RE" = random_c, "FE" = within_d))
+```
+
+e\) Obtenha as médias temporais `union` e `married`. Adicione juntamente com `educ`, `black`, e `hisp` à equação do item (iii). Verifique se as estimativas de $\beta_1$ desse modelo e de EF são iguais.
+
+```{r, warning=FALSE}
+df <- df %>%
+  group_by(nr) %>%
+  mutate(
+    union_mean = mean(union, na.rm = TRUE),
+    married_mean = mean(married, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+formula_e <- as.formula("lwage ~ union + married + union_mean + married_mean + educ + black + hisp")
+
+random_e <- plm(formula_e, index = c("nr", "year"), model="random", data = df)
+
+modelsummary(list("RE" = random_e, "FE" = within_d))
+
+```
+
+f\) Conduza um teste de Hausman.
+
+g\) Deixe que `educ` tenha um efeito interativo com ambos `union` e `married` e estime o modelo por efeitos fixos. As interações são significantes?
+
+h\) Estime os efeitos parciais médios de `union` e `married` para o modelo estimado no item anterior. Como isso se compara com as estimativas por EF?
